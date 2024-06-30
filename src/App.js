@@ -5,7 +5,9 @@ function App() {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const game = {grid:40};
-
+  const player = {x:game.grid*7,y:game.grid*8,w:game.grid*2,h:game.grid/2,color:'red'};
+  const keyz = {ArrowLeft:false,ArrowRight:false};
+  
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
@@ -17,9 +19,18 @@ function App() {
     draw(context)
   },[])
 
-  function draw(ctx){
-    const player = {x:game.grid*7,y:game.grid*8,w:game.grid*2,h:game.grid/2,color:'red'};
+  document.addEventListener('keydown',(e)=>{
+    if(e.code in keyz){  keyz[e.code] = true;}
+    console.log(keyz);
+  })
 
+  document.addEventListener('keyup',(e)=>{
+    if(e.code in keyz){  keyz[e.code] = false;}
+    console.log(keyz);
+  })
+  
+
+  function draw(ctx){
     ctx.beginPath();
     ctx.rect(player.x,player.y,player.w,player.h);
     ctx.fillStyle = player.color;
