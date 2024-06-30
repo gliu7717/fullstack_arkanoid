@@ -5,20 +5,20 @@ function App() {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const game = {
-    grid: 60,
-    ani: '',
-    bricks:[],
-    num:48,
+    grid: 80
+    , ani: ''
+    , bricks: []
+    , num: 100
+    , gameover: true
   };
-
   const ball = {
     x: game.grid * 7
     , y: game.grid * 5
     , w: game.grid / 3
     , h: game.grid / 3
     , color: 'green'
-    , dx: 1
-    , dy: 1
+    , dx: 0
+    , dy: 0
   };
   const player = {
     x: game.grid * 7
@@ -95,6 +95,9 @@ function App() {
   function outputStartGame(ctx,canvas) {
     let output = "Click to Start Game";
     ctx.font = Math.floor(game.grid * 0.7) + 'px serif';
+    if(canvas.width < 900){
+      ctx.font = '20px serif';
+    }
     ctx.textAlign = 'center';
     ctx.fillStyle = 'yellow';
     ctx.fillText(output, canvas.width / 2, canvas.height / 2);
@@ -103,9 +106,9 @@ function App() {
   function startGame(canvas){
     game.inplay = false;
     player.x = game.grid * 7;
-    player.y = game.grid * 8;
-    player.w = game.grid * 2;
-    player.h = game.grid / 2;
+    player.y = canvas.height - game.grid * 2;
+    player.w = game.grid * 1.5;
+    player.h = game.grid /4;
     player.lives = 5;
     player.score = 0;
     resetBall();
@@ -116,12 +119,16 @@ function App() {
     let xPos = game.grid / 2;
     let yPos = 0;
     console.log(totalAcross);
+    let yy = 0;
     for (let i = 0; i < game.num; i++) {
       if (i % totalAcross == 0) {
+        yy++;
         yPos += height + buffer;
         xPos = game.grid / 2;
       }
-      createBrick(xPos, yPos, width, height);
+      if(yy < 5){
+        createBrick(xPos, yPos, width, height);
+      }
       xPos += width + buffer;
     }
   }
@@ -140,8 +147,15 @@ function App() {
     if(e.code in keyz){  keyz[e.code] = false;}
   })
   function movement(){
-    if(keyz.ArrowLeft){player.x-= player.speed;}
-    if(keyz.ArrowRight){player.x+= player.speed;}
+    if (keyz.ArrowLeft) {
+      player.x -= player.speed;
+    }
+    if (keyz.ArrowRight) {
+      player.x += player.speed;
+    }
+    if(!game.inplay){
+      ball.x = player.x + player.w/2;
+    }
   }
 
   function drawPlayer(ctx)
@@ -213,7 +227,7 @@ function App() {
       ctx.closePath();
       if (collDetection(brick, ball)) {
         let rem = game.bricks.splice(index, 1);
-        //player.score += brick.v;
+        player.score += brick.v;
         ball.dy *= -1;
       }
     })
@@ -228,10 +242,14 @@ function App() {
     };
     let output1 = player.lives == 1 ? 'Life Left' : 'Lives Left';
     let output = `${output1} : ${player.lives} Score : ${player.score}`;
-    if (game.gameover) {
-      output = `Score ${player.score} GAME OVER Click to Start Again`;
-    }
     ctx.font = Math.floor(game.grid * 0.7) + 'px serif';
+    if (game.gameover) {
+      ctx.font = '24px serif';
+      output = `Score ${player.score} GAME OVER Click to Start Again`;
+    }  
+    if(canvas.width < 900){
+      ctx.font = '20px serif';
+    }
     ctx.textAlign = 'center';
     ctx.fillStyle = 'white';
     ctx.fillText(output, canvas.width / 2, canvas.height - 20);
