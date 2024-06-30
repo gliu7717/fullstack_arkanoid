@@ -12,14 +12,13 @@ function App() {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
     contextRef.current = context;
-    document.body.prepend(canvas);
+    //document.body.prepend(canvas);
     canvas.setAttribute('width',game.grid*15);
     canvas.setAttribute('height',game.grid*10);
     canvas.style.border = '1px solid black';
     game.ani = requestAnimationFrame(draw);
     draw(context)
   },[])
-
   document.addEventListener('keydown',(e)=>{
     if(e.code in keyz){  keyz[e.code] = true;}
     console.log(keyz);
@@ -29,7 +28,6 @@ function App() {
     if(e.code in keyz){  keyz[e.code] = false;}
     console.log(keyz);
   })
-  
   function movement(){
     if(keyz.ArrowLeft){player.x-= player.speed;}
     if(keyz.ArrowRight){player.x+= player.speed;}
@@ -55,12 +53,21 @@ function App() {
   };
   const onMouseUp = ({nativeEvent}) => {
     let {x,y} = nativeEvent;
+    
     nativeEvent.preventDefault();
   };
   const onMouseMove = ({nativeEvent}) => {
     let {x,y} = nativeEvent;
+    const canvas = canvasRef.current;
+    const val = x - canvas.offsetLeft;
+    console.log(val)
+    if(val > player.w && val < canvas.width){
+      player.x = val - player.w;
+      console.log(player.x);
+    }
     nativeEvent.preventDefault();
   };
+
   const onMouseLeave = ({nativeEvent}) => {
     let {x,y} = nativeEvent;
     nativeEvent.preventDefault();
