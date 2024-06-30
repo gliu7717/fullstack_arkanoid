@@ -10,6 +10,7 @@ function App() {
     , bricks: []
     , num: 100
     , gameover: true
+    , bonus: []
   };
   const ball = {
     x: game.grid * 7
@@ -23,8 +24,8 @@ function App() {
   const player = {
     x: game.grid * 7
     , y: game.grid * 8
-    , w: game.grid * 2
-    , h: game.grid / 2
+    , w: game.grid * 1.5
+    , h: game.grid / 4
     , color: 'red'
     , speed: 5
     , lives :5
@@ -58,6 +59,7 @@ function App() {
       , h: height
       , c: ranCol
       , v: Math.floor(Math.random() * 50)
+      , bonus: Math.floor(Math.random() * 3)
     });
   }
   
@@ -78,13 +80,52 @@ function App() {
       }
     })
   }
+
+  function drawBonus(ctx,obj) {
+    if (obj.counter < 0) {
+      if (obj.color == 'black') {
+        obj.color = 'white';
+        obj.alt = 'black';
+        obj.counter = 10;
+      }
+      else {
+        obj.color = 'black';
+        obj.alt = 'white';
+        obj.counter = 10;
+      }
+    }
+    console.log(obj.counter);
+    obj.counter--;
+    ctx.beginPath();
+    ctx.strokeStyle = obj.color;
+    ctx.rect(obj.x, obj.y, obj.w, obj.h);
+    ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+    ctx.fillStyle = obj.alt;
+    ctx.fill();
+    ctx.closePath();
+    ctx.beginPath();
+    ctx.fillStyle = obj.color;
+    ctx.font = '14px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(obj.points, obj.x + obj.w / 2, obj.y + obj.h / 2);
+    ctx.closePath();
+  }
+  
     
   function resetBall() {
+    ball.dy = 0;
     ball.y = player.y - ball.h;
     ball.x = player.x + (player.w / 2);
     game.inplay = false;
   }
 
+  function gameWinner() {
+    game.gameover = true;
+    game.inplay = false;
+    console.log('You WON');
+    cancelAnimationFrame(game.ani);
+  }
+  
   function gameOver() {
     game.gameover = true;
     game.inplay = false;
@@ -111,6 +152,7 @@ function App() {
     player.h = game.grid /4;
     player.lives = 5;
     player.score = 0;
+    game.bonus = [];
     resetBall();
     let buffer = 10;
     let width = game.grid;
@@ -146,12 +188,18 @@ function App() {
   document.addEventListener('keyup',(e)=>{
     if(e.code in keyz){  keyz[e.code] = false;}
   })
-  function movement(){
+  function movement(canvas){
     if (keyz.ArrowLeft) {
       player.x -= player.speed;
+      if(player.x< 0)
+        player.x = 0
     }
     if (keyz.ArrowRight) {
       player.x += player.speed;
+      
+      if(player.x > canvas.width -canvas.offsetLeft)
+        player.x = canvas.width -canvas.offsetLeft
+      console.log(player.x, canvas.width, canvas.offsetLeft)
     }
     if(!game.inplay){
       ball.x = player.x + player.w/2;
@@ -180,6 +228,12 @@ function App() {
       if (player.lives < 0) {
         gameOver();
       }
+    }
+    if (ball.dy > -2 && ball.dy < 0) {
+      ball.dy = -3;
+    }
+    if (ball.dy > 0 && ball.dy < 2) {
+      ball.dy = 3;
     }
     ball.x += ball.dx;
     ball.y += ball.dy;
@@ -210,12 +264,24 @@ function App() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    movement();
+    movement(canvas);
     ballmove(canvas)
     drawPlayer(ctx);
     drawBall(ctx);
     //drawBricks(ctx);
-    
+    game.bonus.forEach((prize, index) => {
+      prize.y += 5;
+      drawBonus(ctx,prize);
+      if (collDetection(prize, player)) {
+        player.score += prize.points;
+        let temp = game.bonus.splice(index, 1);
+        //console.log(temp);
+      }
+      if (prize.y > canvas.height) {
+        let temp = game.bonus.splice(index, 1);
+        //console.log(temp);
+      }
+    })
     game.bricks.forEach((brick, index) => {
       ctx.beginPath();
       ctx.fillStyle = brick.c;
@@ -228,10 +294,29 @@ function App() {
       if (collDetection(brick, ball)) {
         let rem = game.bricks.splice(index, 1);
         player.score += brick.v;
+        //ball.dy++;
+        if (ball.dy > -10 && ball.dy < 10) {
+          ball.dy--;
+        }
         ball.dy *= -1;
+        if (brick.bonus == 1) {
+          game.bonus.push({
+            x: brick.x
+            , y: brick.y
+            , h: brick.h
+            , w: brick.w
+            , points: Math.ceil(Math.random() * 100) + 50
+            , color: 'white'
+            , alt: 'black'
+            , counter: 10
+          })
+        }
+        if (game.bricks.length == 0) {
+          gameWinner();
+        }
       }
     })
-    
+
     if (collDetection(player, ball)) {
       ball.dy *= -1;
       let val1 = ball.x + (ball.w / 2) - player.x;
