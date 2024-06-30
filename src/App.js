@@ -4,17 +4,28 @@ import './App.css';
 function App() {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
+  const game = {grid:40};
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
     contextRef.current = context;
-    const game = {grid:40};
     document.body.prepend(canvas);
     canvas.setAttribute('width',game.grid*15);
     canvas.setAttribute('height',game.grid*10);
     canvas.style.border = '1px solid black';
+    draw(context)
   },[])
+
+  function draw(ctx){
+    const player = {x:game.grid*7,y:game.grid*8,w:game.grid*2,h:game.grid/2,color:'red'};
+
+    ctx.beginPath();
+    ctx.rect(player.x,player.y,player.w,player.h);
+    ctx.fillStyle = player.color;
+    ctx.fill();
+    ctx.closePath();
+  }
 
   const onMouseDown = ({nativeEvent}) => {
     let {x,y} = nativeEvent;
