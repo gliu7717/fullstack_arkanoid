@@ -4,14 +4,36 @@ import './App.css';
 function App() {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
-  const game = {grid:60,ani:''};
-  const ball = {x:game.grid*7,y:game.grid*5,w:game.grid/3,h:game.grid/3,color:'green',dx:5,dy:5};
-  const player = {x:game.grid*7,y:game.grid*8,w:game.grid*2,h:game.grid/2,color:'red',speed:5};
-  const keyz = {ArrowLeft:false,ArrowRight:false};
+  const game = {
+    grid: 60
+    , ani: ''
+  };
+  const ball = {
+    x: game.grid * 7
+    , y: game.grid * 5
+    , w: game.grid / 3
+    , h: game.grid / 3
+    , color: 'green'
+    , dx: 5
+    , dy: 5
+  };
+  const player = {
+    x: game.grid * 7
+    , y: game.grid * 8
+    , w: game.grid * 2
+    , h: game.grid / 2
+    , color: 'red'
+    , speed: 5
+  };
+  const keyz = {
+    ArrowLeft: false
+    , ArrowRight: false
+  };
   
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
+    canvas.style.background = 'black';
     contextRef.current = context;
     //document.body.prepend(canvas);
     canvas.setAttribute('width',game.grid*15);
@@ -67,6 +89,13 @@ function App() {
     ctx.closePath();    
   }
 
+  function collDetection(obj1, obj2) {
+    const xAxis = (obj1.x < (obj2.x + obj2.w)) && ((obj1.x + obj1.w) > obj2.x);
+    const yAxis = (obj1.y < (obj2.y + obj2.h)) && ((obj1.y + obj1.h) > obj2.y);
+    const val = xAxis && yAxis;
+    return val;
+  }
+  
   function draw(){
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -75,6 +104,14 @@ function App() {
     ballmove(canvas)
     drawPlayer(ctx);
     drawBall(ctx);
+    if (collDetection(player, ball)) {
+      ball.dy *= -1;
+      let val1 = ball.x + (ball.w / 2) - player.x;
+      let val2 = val1 - player.w / 2;
+      let val3 = Math.ceil(val2 / (player.w / 10));
+      ball.dx = val3;
+      console.log(val1, val2, val3);
+    };
     game.ani = requestAnimationFrame(draw);
   }
 
