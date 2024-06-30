@@ -5,17 +5,20 @@ function App() {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const game = {
-    grid: 60
-    , ani: ''
+    grid: 60,
+    ani: '',
+    bricks:[],
+    num:48
   };
+
   const ball = {
     x: game.grid * 7
     , y: game.grid * 5
     , w: game.grid / 3
     , h: game.grid / 3
     , color: 'green'
-    , dx: 5
-    , dy: 5
+    , dx: 1
+    , dy: 1
   };
   const player = {
     x: game.grid * 7
@@ -40,10 +43,81 @@ function App() {
     canvas.setAttribute('height',game.grid*10);
     canvas.style.border = '1px solid black';
     game.ani = requestAnimationFrame(draw);
+    startGame(canvas);
     draw(context)
   },[])
+
+  function createBrick(xPos, yPos, width, height) {
+    let ranCol = '#' + Math.random().toString(16).substr(-6);
+    game.bricks.push({
+      x: xPos
+      , y: yPos
+      , w: width
+      , h: height
+      , c: ranCol
+      , v: Math.floor(Math.random() * 50)
+    });
+  }
+  
+  function drawBricks(ctx){
+    game.bricks.forEach((brick, index) => {
+      ctx.beginPath();
+      ctx.fillStyle = brick.c;
+      ctx.strokeStyle = 'white';
+      //console.log(brick);
+      ctx.rect(brick.x, brick.y, brick.w, brick.h);
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      if (collDetection(brick, ball)) {
+        let rem = game.bricks.splice(index, 1);
+        player.score += brick.v;
+        ball.dy *= -1;
+      }
+    })
+  }
+    
+  function resetBall() {
+    ball.y = player.y - ball.h;
+    ball.x = player.x + (player.w / 2);
+    game.inplay = false;
+  }
+  
+  function startGame(canvas){
+    game.inplay = false;
+    player.x = game.grid * 7;
+    player.y = game.grid * 8;
+    player.w = game.grid * 2;
+    player.h = game.grid / 2;
+    player.lives = 5;
+    player.score = 0;
+    resetBall();
+    let buffer = 10;
+    let width = game.grid;
+    let height = game.grid / 2;
+    let totalAcross = Math.floor((canvas.width - game.grid) / (width + buffer));
+    let xPos = game.grid / 2;
+    let yPos = 0;
+    console.log(totalAcross);
+    for (let i = 0; i < game.num; i++) {
+      if (i % totalAcross == 0) {
+        yPos += height + buffer;
+        xPos = game.grid / 2;
+      }
+      createBrick(xPos, yPos, width, height);
+      xPos += width + buffer;
+    }
+  }
+  
   document.addEventListener('keydown',(e)=>{
     if(e.code in keyz){  keyz[e.code] = true;}
+    
+    if (e.code == 'ArrowUp' && !game.inplay) {
+      game.inplay = true;
+      ball.dx = 2;
+      ball.dy = 2;
+    } 
+     
     console.log(keyz);
   })
 
@@ -79,7 +153,7 @@ function App() {
     ctx.beginPath();
     ctx.strokeStyle = 'white';
     ctx.rect(ball.x,ball.y,ball.w,ball.h);
-    ctx.stroke();
+    //ctx.stroke();
     ctx.closePath();    
     ctx.beginPath();
     ctx.fillStyle = ball.color;
@@ -104,6 +178,24 @@ function App() {
     ballmove(canvas)
     drawPlayer(ctx);
     drawBall(ctx);
+    //drawBricks(ctx);
+    
+    game.bricks.forEach((brick, index) => {
+      ctx.beginPath();
+      ctx.fillStyle = brick.c;
+      ctx.strokeStyle = 'white';
+      //console.log(brick);
+      ctx.rect(brick.x, brick.y, brick.w, brick.h);
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      if (collDetection(brick, ball)) {
+        let rem = game.bricks.splice(index, 1);
+        //player.score += brick.v;
+        ball.dy *= -1;
+      }
+    })
+    
     if (collDetection(player, ball)) {
       ball.dy *= -1;
       let val1 = ball.x + (ball.w / 2) - player.x;
@@ -129,9 +221,12 @@ function App() {
     const canvas = canvasRef.current;
     const val = x - canvas.offsetLeft;
     console.log(val)
-    if(val > player.w && val < canvas.width){
+    if (val > player.w && val < canvas.width) {
       player.x = val - player.w;
-      console.log(player.x);
+      if (!game.inplay) {
+        ball.x = val - (player.w / 2);
+      }
+      //console.log(player.x);
     }
     nativeEvent.preventDefault();
   };
