@@ -1,41 +1,23 @@
 import {useEffect, useRef, useState} from 'react';
 import './App.css';
+import { game } from './game';
+import { ball, 
+         ballmove,
+         drawBall,
+         resetBall } from './ball';
+import { player, 
+         drawPlayer} from './player';
+import { createBrick, 
+         drawBrick } from './brick';
+import { drawBonus } from './bonus';
 
 function App() {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
-  const game = {
-    grid: 80
-    , ani: ''
-    , bricks: []
-    , num: 100
-    , gameover: true
-    , bonus: []
-  };
-  const ball = {
-    x: game.grid * 7
-    , y: game.grid * 5
-    , w: game.grid / 3
-    , h: game.grid / 3
-    , color: 'green'
-    , dx: 0
-    , dy: 0
-  };
-  const player = {
-    x: game.grid * 7
-    , y: game.grid * 8
-    , w: game.grid * 1.5
-    , h: game.grid / 4
-    , color: 'red'
-    , speed: 5
-    , lives :5
-    ,score : 0
-  };
   const keyz = {
     ArrowLeft: false
     , ArrowRight: false
   };
-  
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
@@ -50,86 +32,10 @@ function App() {
     draw(context)
   },[])
 
-  function createBrick(xPos, yPos, width, height) {
-    let ranCol = '#' + Math.random().toString(16).substr(-6);
-    game.bricks.push({
-      x: xPos
-      , y: yPos
-      , w: width
-      , h: height
-      , c: ranCol
-      , v: Math.floor(Math.random() * 50)
-      , bonus: Math.floor(Math.random() * 3)
-    });
-  }
-  
-  function drawBricks(ctx){
-    game.bricks.forEach((brick, index) => {
-      ctx.beginPath();
-      ctx.fillStyle = brick.c;
-      ctx.strokeStyle = 'white';
-      //console.log(brick);
-      ctx.rect(brick.x, brick.y, brick.w, brick.h);
-      ctx.fill();
-      ctx.stroke();
-      ctx.closePath();
-      if (collDetection(brick, ball)) {
-        let rem = game.bricks.splice(index, 1);
-        player.score += brick.v;
-        ball.dy *= -1;
-      }
-    })
-  }
-
-  function drawBonus(ctx,obj) {
-    if (obj.counter < 0) {
-      if (obj.color == 'black') {
-        obj.color = 'white';
-        obj.alt = 'black';
-        obj.counter = 10;
-      }
-      else {
-        obj.color = 'black';
-        obj.alt = 'white';
-        obj.counter = 10;
-      }
-    }
-    console.log(obj.counter);
-    obj.counter--;
-    ctx.beginPath();
-    ctx.strokeStyle = obj.color;
-    ctx.rect(obj.x, obj.y, obj.w, obj.h);
-    ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
-    ctx.fillStyle = obj.alt;
-    ctx.fill();
-    ctx.closePath();
-    ctx.beginPath();
-    ctx.fillStyle = obj.color;
-    ctx.font = '14px serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(obj.points, obj.x + obj.w / 2, obj.y + obj.h / 2);
-    ctx.closePath();
-  }
-  
-    
-  function resetBall() {
-    ball.dy = 0;
-    ball.y = player.y - ball.h;
-    ball.x = player.x + (player.w / 2);
-    game.inplay = false;
-  }
-
   function gameWinner() {
     game.gameover = true;
     game.inplay = false;
     console.log('You WON');
-    cancelAnimationFrame(game.ani);
-  }
-  
-  function gameOver() {
-    game.gameover = true;
-    game.inplay = false;
-    console.log('game over press to start again');
     cancelAnimationFrame(game.ani);
   }
   
@@ -169,7 +75,7 @@ function App() {
         xPos = game.grid / 2;
       }
       if(yy < 5){
-        createBrick(xPos, yPos, width, height);
+        createBrick(game, xPos, yPos, width, height);
       }
       xPos += width + buffer;
     }
@@ -177,17 +83,16 @@ function App() {
   
   document.addEventListener('keydown',(e)=>{
     if(e.code in keyz){  keyz[e.code] = true;}
-    
     if (e.code == 'ArrowUp' && !game.inplay) {
       game.inplay = true;
       ball.dx = 2;
       ball.dy = 2;
     } 
   })
-
   document.addEventListener('keyup',(e)=>{
     if(e.code in keyz){  keyz[e.code] = false;}
   })
+
   function movement(canvas){
     if (keyz.ArrowLeft) {
       player.x -= player.speed;
@@ -196,7 +101,6 @@ function App() {
     }
     if (keyz.ArrowRight) {
       player.x += player.speed;
-      
       if(player.x > canvas.width -canvas.offsetLeft)
         player.x = canvas.width -canvas.offsetLeft
       console.log(player.x, canvas.width, canvas.offsetLeft)
@@ -205,52 +109,22 @@ function App() {
       ball.x = player.x + player.w/2;
     }
   }
-
-  function drawPlayer(ctx)
+  
+  function printInfo(ctx,canvas)
   {
-    ctx.beginPath();
-    ctx.rect(player.x,player.y,player.w,player.h);
-    ctx.fillStyle = player.color;
-    ctx.fill();
-    ctx.closePath();
-  }
-
-  function ballmove(canvas){
-    if (ball.x > canvas.width || ball.x < 0) {
-      ball.dx *= -1;
+    let output1 = player.lives == 1 ? 'Life Left' : 'Lives Left';
+    let output = `${output1} : ${player.lives} Score : ${player.score}`;
+    ctx.font = Math.floor(game.grid * 0.7) + 'px serif';
+    if (game.gameover) {
+      ctx.font = '24px serif';
+      output = `Score ${player.score} GAME OVER Click to Start Again`;
+    }  
+    if(canvas.width < 900){
+      ctx.font = '20px serif';
     }
-    if (ball.y < 0) {
-      ball.dy *= -1;
-    }
-    if (ball.y > canvas.height) {
-      player.lives--;
-      resetBall();
-      if (player.lives < 0) {
-        gameOver();
-      }
-    }
-    if (ball.dy > -2 && ball.dy < 0) {
-      ball.dy = -3;
-    }
-    if (ball.dy > 0 && ball.dy < 2) {
-      ball.dy = 3;
-    }
-    ball.x += ball.dx;
-    ball.y += ball.dy;
-  }
-
-  function drawBall(ctx){
-    ctx.beginPath();
-    ctx.strokeStyle = 'white';
-    ctx.rect(ball.x,ball.y,ball.w,ball.h);
-    //ctx.stroke();
-    ctx.closePath();    
-    ctx.beginPath();
-    ctx.fillStyle = ball.color;
-    let adj = ball.w/2;
-    ctx.arc(ball.x+adj,ball.y+adj,ball.w/2,0,Math.PI*2);
-    ctx.fill();
-    ctx.closePath();    
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'white';
+    ctx.fillText(output, canvas.width / 2, canvas.height - 20);
   }
 
   function collDetection(obj1, obj2) {
@@ -283,14 +157,7 @@ function App() {
       }
     })
     game.bricks.forEach((brick, index) => {
-      ctx.beginPath();
-      ctx.fillStyle = brick.c;
-      ctx.strokeStyle = 'white';
-      //console.log(brick);
-      ctx.rect(brick.x, brick.y, brick.w, brick.h);
-      ctx.fill();
-      ctx.stroke();
-      ctx.closePath();
+      drawBrick(ctx, brick)
       if (collDetection(brick, ball)) {
         let rem = game.bricks.splice(index, 1);
         player.score += brick.v;
@@ -325,19 +192,8 @@ function App() {
       ball.dx = val3;
       //console.log(val1, val2, val3);
     };
-    let output1 = player.lives == 1 ? 'Life Left' : 'Lives Left';
-    let output = `${output1} : ${player.lives} Score : ${player.score}`;
-    ctx.font = Math.floor(game.grid * 0.7) + 'px serif';
-    if (game.gameover) {
-      ctx.font = '24px serif';
-      output = `Score ${player.score} GAME OVER Click to Start Again`;
-    }  
-    if(canvas.width < 900){
-      ctx.font = '20px serif';
-    }
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'white';
-    ctx.fillText(output, canvas.width / 2, canvas.height - 20);
+
+    printInfo(ctx,canvas)
     if (!game.gameover) {
       game.ani = requestAnimationFrame(draw);
     }
@@ -359,10 +215,10 @@ function App() {
     nativeEvent.preventDefault();
   };
   const onMouseUp = ({nativeEvent}) => {
-    let {x,y} = nativeEvent;
-    
+    let {x,y} = nativeEvent;    
     nativeEvent.preventDefault();
   };
+
   const onMouseMove = ({nativeEvent}) => {
     let {x,y} = nativeEvent;
     const canvas = canvasRef.current;
