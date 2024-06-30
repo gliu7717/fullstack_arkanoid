@@ -8,7 +8,7 @@ function App() {
     grid: 60,
     ani: '',
     bricks:[],
-    num:48
+    num:48,
   };
 
   const ball = {
@@ -27,6 +27,8 @@ function App() {
     , h: game.grid / 2
     , color: 'red'
     , speed: 5
+    , lives :5
+    ,score : 0
   };
   const keyz = {
     ArrowLeft: false
@@ -43,7 +45,7 @@ function App() {
     canvas.setAttribute('height',game.grid*10);
     canvas.style.border = '1px solid black';
     game.ani = requestAnimationFrame(draw);
-    startGame(canvas);
+    outputStartGame(context,canvas)
     draw(context)
   },[])
 
@@ -82,7 +84,22 @@ function App() {
     ball.x = player.x + (player.w / 2);
     game.inplay = false;
   }
+
+  function gameOver() {
+    game.gameover = true;
+    game.inplay = false;
+    console.log('game over press to start again');
+    cancelAnimationFrame(game.ani);
+  }
   
+  function outputStartGame(ctx,canvas) {
+    let output = "Click to Start Game";
+    ctx.font = Math.floor(game.grid * 0.7) + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'yellow';
+    ctx.fillText(output, canvas.width / 2, canvas.height / 2);
+  }
+
   function startGame(canvas){
     game.inplay = false;
     player.x = game.grid * 7;
@@ -117,13 +134,10 @@ function App() {
       ball.dx = 2;
       ball.dy = 2;
     } 
-     
-    console.log(keyz);
   })
 
   document.addEventListener('keyup',(e)=>{
     if(e.code in keyz){  keyz[e.code] = false;}
-    console.log(keyz);
   })
   function movement(){
     if(keyz.ArrowLeft){player.x-= player.speed;}
@@ -140,15 +154,23 @@ function App() {
   }
 
   function ballmove(canvas){
-    if(ball.x > canvas.width || ball.x < 0  ){
+    if (ball.x > canvas.width || ball.x < 0) {
       ball.dx *= -1;
     }
-    if(ball.y > canvas.height || ball.y < 0 ){
+    if (ball.y < 0) {
       ball.dy *= -1;
+    }
+    if (ball.y > canvas.height) {
+      player.lives--;
+      resetBall();
+      if (player.lives < 0) {
+        gameOver();
+      }
     }
     ball.x += ball.dx;
     ball.y += ball.dy;
   }
+
   function drawBall(ctx){
     ctx.beginPath();
     ctx.strokeStyle = 'white';
@@ -202,13 +224,35 @@ function App() {
       let val2 = val1 - player.w / 2;
       let val3 = Math.ceil(val2 / (player.w / 10));
       ball.dx = val3;
-      console.log(val1, val2, val3);
+      //console.log(val1, val2, val3);
     };
-    game.ani = requestAnimationFrame(draw);
+    let output1 = player.lives == 1 ? 'Life Left' : 'Lives Left';
+    let output = `${output1} : ${player.lives} Score : ${player.score}`;
+    if (game.gameover) {
+      output = `Score ${player.score} GAME OVER Click to Start Again`;
+    }
+    ctx.font = Math.floor(game.grid * 0.7) + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'white';
+    ctx.fillText(output, canvas.width / 2, canvas.height - 20);
+    if (!game.gameover) {
+      game.ani = requestAnimationFrame(draw);
+    }
   }
 
   const onMouseDown = ({nativeEvent}) => {
     let {x,y} = nativeEvent;
+    const canvas = canvasRef.current;
+    if (game.gameover) {
+      game.gameover = false;
+      startGame(canvas);
+      game.ani = requestAnimationFrame(draw);
+    }
+    else if (!game.inplay) {
+      game.inplay = true;
+      ball.dx = 5;
+      ball.dy = -5;
+    }
     nativeEvent.preventDefault();
   };
   const onMouseUp = ({nativeEvent}) => {
@@ -220,7 +264,7 @@ function App() {
     let {x,y} = nativeEvent;
     const canvas = canvasRef.current;
     const val = x - canvas.offsetLeft;
-    console.log(val)
+    //console.log(val)
     if (val > player.w && val < canvas.width) {
       player.x = val - player.w;
       if (!game.inplay) {
